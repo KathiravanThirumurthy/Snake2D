@@ -4,8 +4,9 @@ using UnityEngine;
 
 public class Movement : MonoBehaviour
 {
-    
-  
+    private int score = 10;
+    [SerializeField]
+    private Uimanager _uiManager;
     [SerializeField]
     private int _speed;
     private float minX, minY, maxX, maxY;
@@ -16,12 +17,20 @@ public class Movement : MonoBehaviour
     private Transform _tailPrefab;
     [SerializeField]
     private int initialSize = 1;
+    private SpriteRenderer sr;
+    [SerializeField] private Sprite frontFacing;
+    [SerializeField] private Sprite leftFacing;
+    [SerializeField] private Sprite rightFacing;
+    [SerializeField] private Sprite topFacing;
+    private bool isRestart = false;
     private void Awake()
     {
-        minX = -14.1f;
-        maxX = 14.1f;
-        minY =-8.0f;
-        maxY =8.0f;
+        
+        minX = -16.0f;
+        maxX = 16.0f;
+        minY = -15.5f;
+        maxY = 15.5f;
+        sr = GetComponent<SpriteRenderer>();
         Vector2 dir = Vector2.right;
         _tails = new List<Transform>();
         _tails.Add(this.transform);
@@ -30,8 +39,9 @@ public class Movement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-       
+
         //movement();
+        _uiManager = GameObject.Find("Canvas").GetComponent<Uimanager>();
 
     }
 
@@ -39,25 +49,32 @@ public class Movement : MonoBehaviour
     void Update()
     {
         movement(dir);
-        
+        if(Input.GetKeyDown(KeyCode.R) && isRestart)
+        {
+            ReSetState();
+        }
         if(Input.GetKeyDown(KeyCode.DownArrow))
         {
-           // Debug.Log("Down");
+            // Debug.Log("Down");
+            sr.sprite = frontFacing;
             dir = Vector2.down;
             
         }else if(Input.GetKeyDown(KeyCode.UpArrow))
         {
-           // Debug.Log("up");
+            // Debug.Log("up");
+
+            sr.sprite = topFacing;
             dir = Vector2.up;
         }
         else if (Input.GetKeyDown(KeyCode.RightArrow))
         {
-           // Debug.Log("right");
+            // Debug.Log("right");
+            sr.sprite = rightFacing;
             dir = Vector2.right;
         }
         else if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
-           // Debug.Log("Left");
+            sr.sprite = leftFacing;
             dir = Vector2.left;
         }
 
@@ -74,20 +91,20 @@ public class Movement : MonoBehaviour
     private void movement(Vector2 dir)
     {
         
-        if(transform.position.x >maxX)
+        if(Mathf.Round(transform.position.x) > Mathf.Round(maxX))
         {
-           transform.position=new Vector3(minX, transform.position.y, 0);
+           transform.position=new Vector3(Mathf.Round(minX), Mathf.Round(transform.position.y), 0);
         }else if (transform.position.x < minX)
         {
-            transform.position = new Vector3(maxX, transform.position.y, 0);
+            transform.position = new Vector3(Mathf.Round(maxX), Mathf.Round(transform.position.y), 0);
         }
         else if (transform.position.y > maxY)
         {
-            transform.position = new Vector3(transform.position.x, minY, 0);
+            transform.position = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(minY), 0);
         }
         else if (transform.position.y < minY)
         {
-            transform.position = new Vector3(transform.position.x, maxY, 0);
+            transform.position = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(maxY), 0);
         }
 
         //transform.Translate(dir*speed*Time.deltaTime);
@@ -102,14 +119,12 @@ public class Movement : MonoBehaviour
     }
     private void ReSetState()
     {
-        /*  for (int i = 0; i < _tails.Count - 1; i++)
-          {
-              Destroy(_tails[i].gameObject);
-          }
-          _tails.Clear();
-          _tails.Add(this.transform);
-          this.transform.position = Vector3.zero;*/
+       
+         Time.timeScale = 1;
+        _uiManager.gameOver(false);
+        sr.sprite = frontFacing;
         dir = Vector2.right;
+        
         transform.position = Vector3.zero;
 
         // Start at 1 to skip destroying the head
@@ -127,18 +142,23 @@ public class Movement : MonoBehaviour
         {
             _growTail();
         }
+        
     }
     private void OnTriggerEnter2D(Collider2D hitObject)
     {
         
         if (hitObject.gameObject.tag == "Food")
         {
-
+            FindObjectOfType<AudioManager>().Play("Pickup");
+            _uiManager.incrementScore(score);
             _growTail();
         }
         else if(hitObject.gameObject.tag== "Obstacle")
         {
-            ReSetState();
+            _uiManager.gameOver(true);
+            Time.timeScale = 0;
+            //ReSetState();
+            isRestart = true;
         }
 
        
